@@ -5,19 +5,22 @@
 #include <linux/sched.h>
 #include <sched.h>
 #include <sys/syscall.h>
-#include <errno.h>
 
-int child_task()
+void pprint_cmd(char **cmd, int count)
+{
+    printf("running [");
+    for (int i = 0; i < count; i++) {
+        printf("%s", cmd[i]);
+        if (i < count - 1) printf(" ");
+    }
+    printf("]\n");
+}
+
+int child_task(char **cmd)
 {
     pid_t child_pid = getpid();
     printf("Im a child, with PID=%d\n", child_pid);
-    return 0;
-}
-
-int parent_task()
-{
-    pid_t parent_pid = getpid();
-    printf("Im a parent, with PID=%d\n", parent_pid);
+    execvp(cmd[0], cmd);
     return 0;
 }
 
@@ -30,11 +33,20 @@ int main(int argc, char **argv)
 
     // Extract the command and its length
     char **cmd = argv + 2;
-    printf("%s %s\n", cmd[0], cmd[1]);
+    pprint_cmd(cmd, argc - 2);
 
-    int child_tid = clone(child_task);
-    if (child_tid == -1) {
+    // Make a stack for the child to start executing
+    char *buf = malloc(1024);
+    if (!buf) {
+        perror("malloc");
+        exit(1);
+    }
+
+    pid_t child_pid = clone(child_task, buf, CLONE_NEWPID, cmd);
+    if (child_pid == -1) {
         perror("clone");
+        free(buf);
+        exit(1);
     }
 
     // 
