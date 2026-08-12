@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,8 +17,9 @@ void pprint_cmd(char **cmd, int count)
     printf("]\n");
 }
 
-int child_task(char **cmd)
+int child_task(void *arg)
 {
+	char **cmd = (char **)arg;
     pid_t child_pid = getpid();
     printf("Im a child, with PID=%d\n", child_pid);
     execvp(cmd[0], cmd);

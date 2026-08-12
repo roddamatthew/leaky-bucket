@@ -1,2 +1,2 @@
-all: leaky-bucket.c
+all: 
 	clang leaky-bucket.c -o leaky-bucket.o
