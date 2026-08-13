@@ -23,6 +23,12 @@ Adds basic isolation through namespaces! Check out your:
 
 Adds a `seccomp` deny list for filtering system calls. Many of the blocked system calls in Docker are somewhat of a pain to demonstrate, so the only blocked system call here is `ptrace` which can be shown by calling `strace`.
 
+```
+$ strace echo hello
+strace: do_test_ptrace_get_syscall_info: PTRACE_TRACEME: Operation not permitted
+strace: attach: ptrace(PTRACE_SEIZE, 4): Operation not permitted
+```
+
 ### `04-cgroup`:
 
 Adds a `cgroup` to stop the container from being able to DoS the host. Try calling the forkbomb program in the container and see that the host is unaffected! The `cgroup` limits 
