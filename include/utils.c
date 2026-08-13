@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -59,7 +60,7 @@ int contain_container()
 {
     // Update resources associated with container
     char hostname[] = "leaky-bucket";
-    if (sethostname(hostname, sizeof(hostname)) == -1) {
+    if (sethostname(hostname, strlen(hostname)) == -1) {
         perror("sethostname");
         exit(1);
     }
