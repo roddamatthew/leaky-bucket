@@ -19,6 +19,14 @@ Adds basic isolation through namespaces! Check out your:
 - Processes with `ps aux`
 - Filesystem with `ls`
 
+### `03-seccomp`:
+
+Adds a `seccomp` deny list for filtering system calls. Many of the blocked system calls in Docker are somewhat of a pain to demonstrate, so the only blocked system call here is `ptrace` which can be shown by calling `strace`.
+
+### `04-cgroup`:
+
+Adds a `cgroup` to stop the container from being able to DoS the host. Try calling the forkbomb program in the container and see that the host is unaffected! The `cgroup` limits 
+
 ## Cloning a FS
 
 The `rootfs` directory needs to be created from a Docker image (or just use the provided `rootfs.tar` if you're a trusting individual)
@@ -26,6 +34,7 @@ The `rootfs` directory needs to be created from a Docker image (or just use the 
 ```
 docker pull alpine
 docker create --name demo-rootfs alpine
+docker run --name demo-rootfs alpine sh -c 'apk add --no-cache strace'
 docker export demo-rootfs -o rootfs.tar
 mkdir rootfs
 tar -xf rootfs.tar -C rootfs
