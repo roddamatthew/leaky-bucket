@@ -12,14 +12,16 @@ Implements that basic interface for spawning a child process and passing your co
 
 ### `02-namespace`:
 
-Adds basic isolation through namespaces. Checkout your:
+Adds basic isolation through namespaces! Check out your:
+- User with `whoami`
 - Hostname with `hostname`
 - Mounts with `mount`
-- 
+- Processes with `ps aux`
+- Filesystem with `ls`
 
 ## Cloning a FS
 
-The `rootfs` directory needs to be created from a Docker image:
+The `rootfs` directory needs to be created from a Docker image (or just use the provided `rootfs.tar` if you're a trusting individual)
 
 ```
 docker pull alpine

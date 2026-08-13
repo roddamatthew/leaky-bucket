@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <sys/select.h>
@@ -44,10 +45,12 @@ void print_summary()
     char hostname[256] = {0};
     char cwd[256] = {0};
 
+    struct passwd *pw = getpwuid(getuid());
     gethostname(hostname, sizeof(hostname));
     getcwd(cwd, sizeof(cwd));
 
     printf("*** SUMMARY OF PID=%d ***\n", getpid());
+    printf("> user=%s\n", pw->pw_name);
     printf("> hostname=%s\n", hostname);
     printf("> cwd=%s\n", cwd);
     printf("*** END OF SUMMARY ***\n");
