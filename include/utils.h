@@ -11,3 +11,4 @@ void pprint_cmd(char **cmd, int count);
 int setup_child_io(int pipe[2]);
 int setup_parent_io(int pipe[2]);
 void print_summary();
+int contain_container();

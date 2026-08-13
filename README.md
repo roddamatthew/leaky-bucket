@@ -33,6 +33,12 @@ strace: attach: ptrace(PTRACE_SEIZE, 4): Operation not permitted
 
 Adds a `cgroup` to stop the container from being able to DoS the host. Try calling the forkbomb program in the container and see that the host is unaffected! The `cgroup` limits 
 
+## Required packages
+
+```
+sudo apt instal libseccomp-dev
+```
+
 ## Cloning a FS
 
 The `rootfs` directory needs to be created from a Docker image (or just use the provided `rootfs.tar` if you're a trusting individual)

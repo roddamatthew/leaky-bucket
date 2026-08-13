@@ -1,5 +1,3 @@
-#define _XOPEN_SOURCE 600
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,6 +7,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <sys/select.h>
+#include <sys/mount.h>
 
 void pprint_cmd(char **cmd, int count)
 {
@@ -54,4 +53,28 @@ void print_summary()
     printf("> hostname=%s\n", hostname);
     printf("> cwd=%s\n", cwd);
     printf("*** END OF SUMMARY ***\n");
+}
+
+int contain_container()
+{
+    // Update resources associated with container
+    char hostname[] = "leaky-bucket";
+    if (sethostname(hostname, sizeof(hostname)) == -1) {
+        perror("sethostname");
+        exit(1);
+    }
+    if (chroot("../rootfs") == -1) {
+        perror("chroot");
+        exit(1);
+    }
+    if (chdir("/") == -1) {
+        perror("chdir");
+        exit(1);
+    }
+    if (mount("proc", "/proc", "proc", 0, "") == -1) {
+        perror("mount");
+        exit(1);
+    }
+
+    return 0;
 }

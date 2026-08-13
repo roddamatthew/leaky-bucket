@@ -20,11 +20,7 @@ int start_container(void *arg)
     setup_child_io(args->pipefd);
     
     // Change container resources
-    char hostname[] = "bucket";
-    sethostname(hostname, sizeof(hostname));
-    chroot("../rootfs");
-    chdir("/");
-    mount("proc", "proc", "proc", 0, "");
+    contain_container();
     print_summary();
 
     // Do the container task!
