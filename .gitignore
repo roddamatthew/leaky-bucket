@@ -1,1 +1,3 @@
 *.o
+leaky-bucket
+rootfs/
