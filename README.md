@@ -31,7 +31,11 @@ strace: attach: ptrace(PTRACE_SEIZE, 4): Operation not permitted
 
 ### `04-cgroup`:
 
-Adds a `cgroup` to stop the container from being able to DoS the host. Try calling the forkbomb program in the container and see that the host is unaffected! The `cgroup` limits 
+Adds a `cgroup` to stop the container from being able to DoS the host. Try calling the forkbomb program in the container and see that the host is unaffected! The `cgroup` limits... TBD
+
+### `05-apparmor`
+
+- block reading /etc/shadow
 
 ## Required packages
 
@@ -39,7 +43,7 @@ Adds a `cgroup` to stop the container from being able to DoS the host. Try calli
 sudo apt instal libseccomp-dev
 ```
 
-## Cloning a FS
+## Cloning a FS for your `leaky-bucket`
 
 The `rootfs` directory needs to be created from a Docker image (or just use the provided `rootfs.tar` if you're a trusting individual)
 
