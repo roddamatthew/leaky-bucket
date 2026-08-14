@@ -19,10 +19,8 @@ int start_container(void *arg)
 {
     // Unpack argument and setup IO
     container_args_t *args = (container_args_t*)arg;
-    setup_child_io(args->pipefd);
-    
-    // Change container resources
-    contain_container();
+    notify_parent(args->send_meta, args->recv_meta); // Notify parent to do UID mapping
+    contain_container(); // Change container resources
     print_summary();
 
     // Add a deny list with seccomp
@@ -33,6 +31,7 @@ int start_container(void *arg)
     seccomp_release(ctx); // Release context
 
     // Do the container task!
+    setup_child_io(args->data);
     execvp(args->cmd[0], args->cmd);
     return 0;
 }
@@ -40,7 +39,7 @@ int start_container(void *arg)
 int main(int argc, char **argv)
 {
     if (argc < 3 || strcmp(argv[1], "run") != 0) {
-        printf("Expected to be called like %s run {your-cmd}\n", argv[0]);
+        printf("[!] Expected to be called like %s run {your-cmd}\n", argv[0]);
         exit(1);
     }
     
@@ -57,19 +56,23 @@ int main(int argc, char **argv)
         perror("malloc");
         exit(1);
     }
-    // ptr must point to top of the stack
+    // ptr must point to top of the stackk
     container_stack += STACK_SIZE;
 
-    // Make a pipe to get child's output
-    int pipefd[2];
-    if (pipe(pipefd) == -1) {
-        perror("pipe");
-        exit(1);
+    // Make pipes for bidirectional comms
+    int pipes[3][2];
+    for (int i = 0; i < 3; i++) {
+        if (pipe(pipes[i]) == -1) {
+            perror("pipe");
+            exit(1);
+        }
     }
 
     // Pack arguments for container
     container_args_t args = {
-        .pipefd = {pipefd[0], pipefd[1]},
+        .data = {pipes[0][0], pipes[0][1]},
+        .send_meta = {pipes[1][0], pipes[1][1]},
+        .recv_meta = {pipes[2][0], pipes[2][1]},
         .cmd = cmd
     };
 
@@ -84,20 +87,43 @@ int main(int argc, char **argv)
 
     // Parent continues
     if (container_pid > 0) {
+        // Wait for container creation to write UID mapping 
+        char ready = 'n';
+        printf("parent waiting for args.send_meta read end\n");
+        if (read(args.send_meta[0], &ready, 1) > 0) {
+            if (ready == 'y') {
+                printf("parent creating uid mapping\n");
+                create_uid_mapping(container_pid, args.recv_meta);
+            } else {
+                printf("[!] Received unexpected metadata from container: %c\n", ready);
+                exit(1);
+            }
+        } else {
+            perror("read meta");
+            exit(1);
+        }
+
+        // Can now close the metadata pipes
+        for (int i = 0; i < 2; i++) {
+            close(args.send_meta[i]);
+            close(args.recv_meta[i]);
+        }
+
         // Read from pipe
-        close(pipefd[1]); // parent doesn't need to write
+        close(args.data[1]); // parent doesn't need to write
         char buf[4096];
         ssize_t n;
-        while ((n = read(pipefd[0], buf, sizeof(buf))) > 0) {
+        while ((n = read(args.data[0], buf, sizeof(buf))) > 0) {
             write(STDOUT_FILENO, buf, n);
         }
-        close(pipefd[0]);
+        close(args.data[0]);
 
         int status;
         if (waitpid(container_pid, &status, 0) == -1) {
             perror("waitpid");
             exit(1);
         }
+        printf("Container exited gracefully.\n");
     }
 
     return 0;
