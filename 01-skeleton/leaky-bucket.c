@@ -8,6 +8,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/mount.h>
 #include <linux/sched.h>
 
 #include "utils.h"
@@ -16,10 +17,10 @@ int start_container(void *arg)
 {
     // Unpack argument and setup IO
     container_args_t *args = (container_args_t*)arg;
-    setup_child_io(args->pipefd);
     print_summary();
 
     // Do the container task!
+    setup_child_io(args->data);
     execvp(args->cmd[0], args->cmd);
     return 0;
 }
@@ -27,13 +28,16 @@ int start_container(void *arg)
 int main(int argc, char **argv)
 {
     if (argc < 3 || strcmp(argv[1], "run") != 0) {
-        printf("Expected to be called like %s run {your-cmd}\n", argv[0]);
+        printf("[!] Expected to be called like %s run {your-cmd}\n", argv[0]);
         exit(1);
     }
     
     // Extract the command
     char **cmd = argv + 2;
     pprint_cmd(cmd, argc - 2);
+
+    // Summarise parent to compare w/ container
+    print_summary();
 
     // Make a stack for the child to start execution
     char *container_stack = malloc(STACK_SIZE);
@@ -44,21 +48,25 @@ int main(int argc, char **argv)
     // ptr must point to top of the stack
     container_stack += STACK_SIZE;
 
-    // Make a pipe to get child's output
-    int pipefd[2];
-    if (pipe(pipefd) == -1) {
-        perror("pipe");
-        exit(1);
+    // Make pipes for bidirectional comms
+    int pipes[3][2];
+    for (int i = 0; i < 3; i++) {
+        if (pipe(pipes[i]) == -1) {
+            perror("pipe");
+            exit(1);
+        }
     }
 
     // Pack arguments for container
     container_args_t args = {
-        .pipefd = {pipefd[0], pipefd[1]},
+        .data = {pipes[0][0], pipes[0][1]},
+        .send_meta = {pipes[1][0], pipes[1][1]},
+        .recv_meta = {pipes[2][0], pipes[2][1]},
         .cmd = cmd
     };
 
     // Create a new process with its own hostname namespace
-    int flags = SIGCHLD ;
+    int flags = SIGCHLD;
     pid_t container_pid = clone(start_container, container_stack, flags, &args);
     if (container_pid == -1) {
         perror("clone");
@@ -68,20 +76,27 @@ int main(int argc, char **argv)
 
     // Parent continues
     if (container_pid > 0) {
+        // Don't need metadata pipes for this demo!
+        for (int i = 0; i < 2; i++) {
+            close(args.send_meta[i]);
+            close(args.recv_meta[i]);
+        }
+
         // Read from pipe
-        close(pipefd[1]); // parent doesn't need to write
+        close(args.data[1]); // parent doesn't need to write
         char buf[4096];
         ssize_t n;
-        while ((n = read(pipefd[0], buf, sizeof(buf))) > 0) {
+        while ((n = read(args.data[0], buf, sizeof(buf))) > 0) {
             write(STDOUT_FILENO, buf, n);
         }
-        close(pipefd[0]);
+        close(args.data[0]);
 
         int status;
         if (waitpid(container_pid, &status, 0) == -1) {
             perror("waitpid");
             exit(1);
         }
+        printf("Container exited gracefully.\n");
     }
 
     return 0;
