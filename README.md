@@ -35,7 +35,7 @@ Adds a `cgroup` to stop the container from being able to DoS the host. Try calli
 
 ### `05-apparmor`
 
-- block reading /etc/shadow
+- block reading /etc/shadow... also TBD
 
 ## Required packages
 
