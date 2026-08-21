@@ -40,7 +40,7 @@ Adds a `cgroup` to stop the container from being able to DoS the host. Try calli
 ## Required packages
 
 ```
-sudo apt instal libseccomp-dev
+sudo apt install libseccomp-dev
 ```
 
 ## Cloning a FS for your `leaky-bucket`
